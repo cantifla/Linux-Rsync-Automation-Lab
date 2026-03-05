@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# ==============================================================================
+# Script: practica1_rsync.sh
+# Descripción: Automatización de la Práctica 1 - Creación y Sincronización.
+# Autor: [Tu Nombre]
+# ==============================================================================
+
+# 1. Variables de configuración
+DIRECTORIO_ORIGEN="/home/kali/carpeta_sync"
+DIRECTORIO_DESTINO="/home/kali/carpeta_sync_destino"
+USUARIO_DESTINO="kali"
+IP_DESTINO="10.0.0.118"
+
+echo "========================================"
+echo "Iniciando Práctica 1: Rsync Automatizado"
+echo "========================================"
+
+# 2. Creación del entorno de prueba local
+echo "[*] Verificando directorio de origen..."
+mkdir -p "$DIRECTORIO_ORIGEN"
+cd "$DIRECTORIO_ORIGEN" || exit
+
+echo "[*] Generando/Actualizando 100 archivos de prueba..."
+touch archivo{1..100}.txt
+
+# 3. Sincronización con Rsync
+echo "[*] Sincronizando con $IP_DESTINO..."
+rsync -avz "$DIRECTORIO_ORIGEN/" "$USUARIO_DESTINO@$IP_DESTINO:$DIRECTORIO_DESTINO/"
+
+if [ $? -eq 0 ]; then
+    echo "[+] Sincronización completada exitosamente."
+else
+    echo "[-] Error en la sincronización. Verifica las claves SSH o la IP."
+fi
+
+# 4. Auto-configuración en Crontab (Se ejecuta cada 1 minuto)
+SCRIPT_ACTUAL=$(realpath "$0")
+COMANDO_CRON="* * * * * $SCRIPT_ACTUAL"
+
+# Validar si ya existe en crontab para no duplicarlo
+if crontab -l 2>/dev/null | grep -q "$SCRIPT_ACTUAL"; then
+    echo "[*] El script ya se encuentra programado en crontab."
+else
+    echo "[*] Programando el script en crontab para ejecutarse cada 1 minuto..."
+    (crontab -l 2>/dev/null; echo "$COMANDO_CRON") | crontab -
+    echo "[+] Crontab configurado correctamente."
+fi
+
+echo "========================================"
+echo "Proceso finalizado."
